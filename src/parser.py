@@ -1,8 +1,8 @@
 import csv
 from pathlib import Path
 from typing import Optional
-
-from models import Coords, Event
+from datetime import datetime
+from src.models import Coords, Event
 
 
 def read_file(f: Path):
@@ -24,7 +24,9 @@ def parse(user_id: str, lat, lon, d, t) -> Optional[Event]:
         user_id_ = int(user_id)
         lat_ = float(lat)
         lon_ = float(lon)
-        ts_ = datetime.strptime(f"{a} {b}", "%Y-%m-%d %H:%M:%S").timestamp()
-        return Event(user_id_, ts_, Coords(lon_, lat_))
+        ts = f"{d} {t}"
+        ts_ = datetime.strptime(ts, "%Y-%m-%d %H:%M:%S").timestamp()
+        e =  Event(user_id_, ts_, Coords(lon_, lat_))
+        return e
     except Exception as e:
-        pass
+        print(e)
