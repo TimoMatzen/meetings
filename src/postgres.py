@@ -66,7 +66,7 @@ def insert_event(cur, e: Event) -> None:
     values (
         %(user_id)s,
         %(epoch)s,
-        st_setsrid(st_makepoint(%(lat)s, %(lon)s), %(srid)s)
+        st_setsrid(st_makepoint( %(lon)s, %(lat)s), %(srid)s)
     )
     """
 
@@ -77,6 +77,6 @@ def insert_event(cur, e: Event) -> None:
             "epoch": e.timestamp,
             "lon": e.location.lon,
             "lat": e.location.lat,
-            "srid": e.location.projection
+            "srid": e.location.projection,
         },
     )
