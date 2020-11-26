@@ -15,4 +15,4 @@ with con.cursor() as c:
         for lat, lon, _, d, t in parser.read_file(file):
             if event := parser.parse(user_id, lat, lon, d, t):
                 postgres.insert_event(c, event)
-    con.connection.commit()
+        con.connection.commit()
