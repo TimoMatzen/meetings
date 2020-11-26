@@ -2,8 +2,8 @@ import os
 from pathlib import Path
 
 
-def plt_files():
-    for root, folders, files in os.walk("/home/nprins/Data/Geolife Trajectories 1.3"):
+def plt_files(root: str):
+    for root, folders, files in os.walk(root):
         for f in files:
             if f.endswith(".plt"):
                 yield Path(os.path.join(root, f))
