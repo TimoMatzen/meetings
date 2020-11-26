@@ -1,3 +1,5 @@
 black
 psycopg2-binary
 confidence
+numpy==1.19.3
+matplotlib

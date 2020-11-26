@@ -1,7 +1,8 @@
 
 .env/
 .vscode/
-
+data/
+env/
 
 __pycache__
 .p[oc]
