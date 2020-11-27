@@ -5,6 +5,14 @@ import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 
 
+class Instance():
+    def __init__(self, id, value):
+        self.id = id
+        self.value = value
+
+    def __str__(self):
+        return f"Instance(id={self.id}, value={self.value})"
+
 class Node:
     def __init__(self, ranges):
         self.left = None
@@ -12,11 +20,12 @@ class Node:
         self.ranges = ranges
         self.instances = []
 
-    def __str__(self):
-        return f"Node(ranges={self.ranges}, num_instances={len(self.instances)})"
-
     def isLeaf(self):
         return not self.left and not self.right
+
+    def __str__(self):
+        return f"Node(ranges={self.ranges}, n={len(self.instances)})"
+
 
 class Tree:
     def __init__(self, ranges, min_range, split_k):
@@ -37,11 +46,27 @@ class Tree:
         self.min_ranges = min_range
         self.split_k = split_k
 
-    def getRoot(self):
-        return self.root
+    def getNeigbors(self, instance, max_dis):
+        if isinstance(max_dis, int) or isinstance(max_dis, float):
+            max_dis = [max_dis] * len(self.min_ranges)
+        if len(instance.value) != len(max_dis):
+            raise ValueError("dimension mismatch: instance.value and max_dis")
 
-    def getDimensionCount():
-        return len(self.min_ranges)
+        bounding_box = [(x-r, x+r) for x, r in zip(instance.value, max_dis)]
+        return self._getInstancesInArea(bounding_box, self.root)
+
+    def _getInstancesInArea(self, area, node):
+        return [instance for leaf in self._getLeafsInArea(area, self.root) for instance in leaf.instances \
+            if all([r[0] <= v and r[1] > v for r, v in zip(area, instance.value)])]
+
+    def _getLeafsInArea(self, area, node):
+        if node.isLeaf():
+            yield node
+        else:
+            if all([a[0] <= r[1] for a, r in zip(area, node.left.ranges)]):
+                yield from self._getLeafsInArea(area, node.left)
+            if all([a[1] >= r[0] for a, r in zip(area, node.right.ranges)]):
+                yield from self._getLeafsInArea(area, node.right)
 
     def add(self, instance):
         self._add(instance, self.root)
@@ -58,14 +83,14 @@ class Tree:
     def _find(self, instance, node):
         if node.isLeaf():
             return node
-        elif (self._inRange(instance, node.left)):
+        elif (self._inNode(instance, node.left)):
             return self._find(instance, node.left)
-        elif (self._inRange(instance, node.right)):
+        elif (self._inNode(instance, node.right)):
             return self._find(instance, node.right)
         raise ValueError('Node not found!')
 
-    def _inRange(self, instance, node):
-        return all([v >= r[0] and v < r[1] for v, r in zip(instance, node.ranges)])
+    def _inNode(self, instance, node):
+        return all([v >= r[0] and v < r[1] for v, r in zip(instance.value, node.ranges)])
 
     def _split(self, node):
         dim, value = self._getSplit(node)
@@ -73,7 +98,6 @@ class Tree:
         node.right = Node([((value, r[1]) if i == dim else r) for i, r in enumerate(node.ranges)])
         while node.instances:
             self._add(node.instances.pop(), node)
-        node.instances = []
 
     def _shouldSplit(self, node):
         return len(node.instances) >= self.split_k and \
@@ -86,7 +110,7 @@ class Tree:
         for dim in range(len(node.ranges)):
             if node.ranges[dim][1] - node.ranges[dim][0] < self.min_ranges[dim] * 2:
                 continue
-            values = [x[dim] for x in node.instances]
+            values = [x.value[dim] for x in node.instances]
             score = statistics.variance(values)
             if score > best_score:
                 best_dim = dim
