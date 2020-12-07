@@ -6,11 +6,12 @@ import matplotlib.pyplot as plt
 
 # constants
 random.seed(1000)
-num_samples = 1000              # number of instances in the mock data
+num_samples = 100              # number of instances in the mock data
 ranges = [(0, 10), (10, 20)]    # min and max value for each dimension
 min_range = 0.1                 # do not split when a dimension becomes smaler then x  
 split_k = 5                     # split when a node has x instances 
-neighbor_distance = 1           # max distance for an instance to be a neighbor      
+neighbor_distance = 1           # max distance for an instance to be a neighbor; per dimension
+neighbor_radius = 1             # max distance for an instance to be a neighbor; in euclidean space
 draw_interval = 100             # draw every x instances
 draw_delay = 0.1                # time in seconds to wait after a draw
 
@@ -51,17 +52,18 @@ def onclick(event):
         return
 
     poi = Instance(None, [event.xdata, event.ydata])
-    neighbors = tree.getNeigbors(poi, neighbor_distance)
+    neighbors = tree.getNeigbors(poi, neighbor_distance, neighbor_radius, [0, 1] if neighbor_radius else [])
 
     #print(f"Point of interest: {str(poi)}")
     #print(f"Neighbors:\n {[str(x) for x in neighbors]}")
 
-    x, y = poi.value[0] - neighbor_distance, poi.value[1] - neighbor_distance
-    w, h = neighbor_distance * 2, neighbor_distance * 2
-
     plotted_poi_items.append(ax.scatter([poi.value[0]], [poi.value[1]], c='red'))
     plotted_poi_items.append(ax.scatter([n.value[0] for n in neighbors], [n.value[1] for n in neighbors], c='green'))
-    plotted_poi_items.append(ax.add_patch(patches.Rectangle((x, y), w, h, linewidth=1, edgecolor='red', facecolor='none')))
+    x, y, w = poi.value[0] - neighbor_distance, poi.value[1] - neighbor_distance, neighbor_distance * 2
+    plotted_poi_items.append(ax.add_patch(patches.Rectangle((x, y), w, w, linewidth=1, edgecolor='yellow', facecolor='none')))
+
+    if neighbor_radius:
+        plotted_poi_items.append(ax.add_patch(patches.Circle((poi.value[0], poi.value[1]), neighbor_radius, linewidth=1, edgecolor='red', facecolor='none')))
 
     plt.draw()
 
