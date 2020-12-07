@@ -1,35 +1,62 @@
 import random
+from src import utils, parser
+from src.parser import parse, read_file
 from src.smarttree import Tree, Instance
+from src.utils import get_user, plt_files
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 
+##### constants
 
-# constants
+# Data
 random.seed(1000)
-num_samples = 100              # number of instances in the mock data
-ranges = [(0, 10), (10, 20)]    # min and max value for each dimension
-min_range = 0.1                 # do not split when a dimension becomes smaler then x  
-split_k = 5                     # split when a node has x instances 
-neighbor_distance = 1           # max distance for an instance to be a neighbor; per dimension
-neighbor_radius = 1             # max distance for an instance to be a neighbor; in euclidean space
-draw_interval = 100             # draw every x instances
-draw_delay = 0.1                # time in seconds to wait after a draw
+ranges = [(-90, 90), (-180, 180)]       # min and max value for each dimension
+num_samples = 10000                     # number of instances
 
+# Tree building
+min_range = 0.1                         # do not split when a dimension becomes smaler then x
+split_k = 5                             # split when a node has x instances
 
-# create mock data
-mock_data = [Instance(i, [r[0] + random.random() * (r[1] - r[0]) for r in ranges]) for i in range(num_samples)]
-#print(f"mock_data:\n {[str(x) for x in mock_data]}")
+# Search
+neighbor_radius = 0.01                  # max distance for an instance to be a neighbor; in euclidean space
+neighbor_distance = neighbor_radius     # max distance for an instance to be a neighbor; per dimension
 
-# plotting
+# Plotting
+draw_interval = 100                     # draw every x instances
+draw_delay = 0.1                        # time in seconds to wait after a draw
+
+##### Create data
+
+def get_data():
+    cnt = 0
+    path = 'data/Geolife Trajectories 1.3/Data'
+    for file in plt_files(path):
+        user_id = get_user(file)
+        for lat, lon, _, d, t in read_file(file):
+            if cnt >= num_samples:
+                break
+            if event := parse(user_id, lat, lon, d, t):
+                cnt += 1
+                yield Instance(event.user_id, [event.location.lat, event.location.lon])
+
+def get_mock_data():
+    return [Instance(i, [r[0] + random.random() * (r[1] - r[0]) for r in ranges]) for i in range(num_samples)]
+
+data = get_data()
+#data = get_mock_data()
+
+##### Plotting
 fig = plt.figure()
 ax = plt.subplot()
-ax.set_xlim(ranges[0][0], ranges[0][1])
-ax.set_ylim(ranges[1][0], ranges[1][1])
 
+plot_ranges = [(float('inf'), float('-inf')) for d in range(2)]
 plotted_rectangles = set()
 plotted_poi_items = []
 
 def update_plot(tree, instances):
+    ax.set_xlim(plot_ranges[0][0], plot_ranges[0][1])
+    ax.set_ylim(plot_ranges[1][0], plot_ranges[1][1])
+
     ax.scatter([i.value[0] for i in instances], [i.value[1] for i in instances], c='blue')
 
     for leaf in tree.getLeafs():
@@ -69,13 +96,18 @@ def onclick(event):
 
 cid = fig.canvas.mpl_connect('button_press_event', onclick)
 
-# build tree
+##### Build tree
 tree = Tree(ranges, min_range, split_k)
 
-for i, instance in enumerate(mock_data):
+plot_data = []
+for i, instance in enumerate(data):
     tree.add(instance)
-    if (i+1) % draw_interval == 0 or i == len(mock_data) - 1:
-        update_plot(tree, mock_data[i+1-draw_interval:i+1])
+
+    plot_data.append(instance)
+    if (i+1) % draw_interval == 0 or i == num_samples - 1:
+        plot_ranges = [(min(plot_ranges[d][0], *[i.value[d] for i in plot_data]), max(plot_ranges[d][1], *[i.value[d] for i in plot_data])) for d in range(2)]
+        update_plot(tree, plot_data)
+        plot_data.clear()
 
 #print(f"Tree: \n{tree}")
 
