@@ -41,6 +41,7 @@ class Tree:
         self.root = Node(ranges)
         self.min_ranges = min_range
         self.split_k = split_k
+        self.size = 1
 
     def getNeigbors(self, instance, max_dim_dis, euclidean_dis=None, euclidean_dims=None):
         if isinstance(max_dim_dis, int) or isinstance(max_dim_dis, float):
@@ -107,6 +108,7 @@ class Tree:
         node.right = Node([((value, r[1]) if i == dim else r) for i, r in enumerate(node.ranges)])
         while node.instances:
             self._add(node.instances.pop(), node)
+        self.size += 2
 
     def _shouldSplit(self, node):
         return len(node.instances) >= self.split_k and \
